@@ -705,7 +705,7 @@ global_df.dtypes
 ````
 
 ```{code-cell} ipython3
-# votre réponse
+#il faudrait un multi-index pays et date 
 ```
 
 +++ {"tags": ["framed_cell"]}
@@ -718,7 +718,8 @@ rangez votre résultat dans une variable `clean_df`
 ````
 
 ```{code-cell} ipython3
-# votre code
+clean_df=pd.pivot_table(global_df, index=['country', 'date'])
+clean_df
 ```
 
 +++ {"tags": ["framed_cell"]}

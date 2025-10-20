@@ -100,9 +100,13 @@ m3
 ```
 
 ```{code-cell} ipython3
-m12 = pd.merge(m1, m2, left_on=('prenom', 'nom'), right_on=('first_name','last_name'))
-m13=pd.merge(m12, m3
-m13
+m1=m1.set_index(['prenom', 'nom'])
+m3=m3.rename(columns={'first':'prenom', 'last':'nom'})
+m3=m3.set_index(['prenom', 'nom'])
+m2=m2.rename(columns={'first_name':'prenom', 'last_name':'nom'})
+m2=m2.set_index(['prenom', 'nom'])
+table=pd.concat([pd.merge(m1, m2, on = ['prenom', 'nom']),m3])
+table
 ```
 
 ```{code-cell} ipython3
