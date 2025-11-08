@@ -4,14 +4,12 @@ jupytext:
   text_representation:
     extension: .md
     format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.17.3
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  name: python
-  pygments_lexer: ipython3
-  nbconvert_exporter: python
 ---
 
 (label-tp-leases)=
@@ -57,7 +55,7 @@ import matplotlib.pyplot as plt
 ```{code-cell} ipython3
 :tags: [level_basic]
 
-# your code
+%matplotlib ipympl
 ```
 
 2. optional: setup itables, so that we can have scrollable tables
@@ -74,6 +72,7 @@ we have a table of events, each with a begin (`beg`) and `end` time; in addition
 
 ```{code-cell} ipython3
 leases = pd.read_csv("data/leases.csv")
+l2 = pd.read_csv("data/leases.csv")
 leases.head(10)
 ```
 
@@ -84,7 +83,12 @@ surely the columns dtypes need some care
 ```{code-cell} ipython3
 :tags: [level_basic]
 
-# your code
+leases['beg'] = pd.to_datetime(leases['beg'])
+leases['end'] = pd.to_datetime(leases['end'])
+leases['country'] = leases['country'].astype("string") 
+l2['beg'] = pd.to_datetime(l2['beg'])
+l2['end'] = pd.to_datetime(l2['end'])
+l2['country'] = l2['country'].astype("string") 
 ```
 
 ```{code-cell} ipython3
@@ -93,6 +97,7 @@ surely the columns dtypes need some care
 # check it
 
 leases.dtypes
+l2.head(5)
 ```
 
 ### raincheck
@@ -102,7 +107,7 @@ check that the data is well-formed, i.e. **the `end`** timestamp **happens after
 ```{code-cell} ipython3
 :tags: [level_basic]
 
-# your code
+(leases["end"]<=leases["beg"]).sum()
 ```
 
 ### are there any overlapping events ?
@@ -120,7 +125,8 @@ nothing in the rest depends on this question, so if you find this too hard, you 
 ```{code-cell} ipython3
 :tags: [level_basic]
 
-# your code
+(leases["end"]<=leases["beg"]).sum()
+#Ici la somme nous renvoie zéro, ceci signifie que la condition n'est vérifiée pour aucun pays : on n'a donc aucun overlap event.
 ```
 
 ### timespan
@@ -130,7 +136,8 @@ What is the timespan covered by the dataset (**earliest** and **latest** events,
 ```{code-cell} ipython3
 :tags: [level_basic]
 
-# your code
+duration = leases["end"].max()-leases["beg"].min()
+print( leases["beg"].min(),"  ", leases["end"].max(), "  ",duration)
 ```
 
 ### aggregated duration
@@ -141,7 +148,9 @@ write a code that computes the **overall reservation time**, as well as the **av
 ```{code-cell} ipython3
 :tags: [level_basic]
 
-# your code
+res_time = (leases["end"]-leases["beg"]).sum()
+usa_ratio = res_time/duration 
+print("The overall reservation time is :",res_time,"  ", "The average usage ratio is:", usa_ratio*100)
 ```
 
 ## visualization - grouping by period
@@ -178,7 +187,17 @@ we'll make cosmetic improvements below, and [the final results look like this](#
 ```{code-cell} ipython3
 :tags: [level_basic]
 
-# your code
+l2["year"] = leases["beg"].dt.to_period('Y')
+l2["month"] = leases["beg"].dt.to_period('M')
+l2["week"] = leases["beg"].dt.to_period('W')
+l2["res_time"] = leases["end"]-leases["beg"]
+by_year = l2.groupby(by = "year")
+by_month = l2.groupby(by = "month")
+by_week = l2.groupby(by = "week")
+res_time_Y = by_year["res_time"].sum()
+res_time_M = by_month["res_time"].sum()
+res_time_W = by_week["res_time"].sum()
+res_time_W
 ```
 
 ### improve the title and bottom ticks
@@ -212,12 +231,43 @@ SPACES = {
     'M': 3,    # one every 3 months
     'Y': 1,    # on all years
 }
+print("ticks:", ticks_1)
+print("labels:", labels_1)
 ```
 
 ```{code-cell} ipython3
 :tags: [level_basic]
 
-# your code
+res_time_Y_sec = res_time_Y.dt.total_seconds() /3600
+res_time_M_sec = res_time_M.dt.total_seconds() /3600
+res_time_W_sec = res_time_W.dt.total_seconds() /3600
+
+fig, ax= plt.subplots(nrows=1, ncols=3, figsize=(8, 10))
+ax[0].bar(res_time_Y_sec.index.year, res_time_Y_sec.values)
+ticks_0 = res_time_Y_sec.index.year[::SPACES['Y']]  
+ax[0].set_xticks(ticks)
+labels_0 = [str(year) + " " + LEGEND['Y'] for year in ticks_0]
+ax[0].set_xticklabels(labels_0)
+ax[0].set_title("Groupement par années")
+ax[0].grid(True)
+
+ax[1].bar(res_time_M_sec.index.month, res_time_M_sec.values)
+ticks_1 = res_time_M_sec.index.month[::SPACES['M']]  
+ax[1].set_xticks(ticks_1)
+labels_1 = [str(month) + " " + LEGEND['M'] for month in ticks_1]
+ax[1].set_xticklabels(labels_1,rotation=45)
+ax[1].set_title("Groupement par mois")
+ax[1].grid(True)
+
+ax[2].bar(res_time_W_sec.index.week, res_time_W_sec.values)
+ticks_2 = res_time_W_sec.index.week[::SPACES['W']]  
+ax[2].set_xticks(ticks_2)
+labels_2 = [str(week) + " " + LEGEND['W'] for week in ticks_2]
+ax[2].set_xticklabels(labels_2,rotation=45)
+ax[2].set_title("Groupement par semaines")
+ax[2].grid(True)
+
+plt.show()
 ```
 
 ### a function to convert to hours
@@ -230,9 +280,9 @@ you are to write a function that converts a `pd.Timedelta` into a number of hour
 :tags: [level_basic]
 
 # your code
-
+import math 
 def convert_timedelta_to_hours(timedelta: pd.Timedelta) -> int:
-    pass
+    return math.ceil(timedelta.total_seconds() /3600)
 ```
 
 ```{code-cell} ipython3
@@ -296,6 +346,7 @@ the following table allows you to map each country into a region
 
 countries = pd.read_csv("data/countries.csv")
 countries.head(3)
+l2.head(5)
 ```
 
 ### a glimpse on regions
@@ -305,7 +356,9 @@ what's the most effective way to see how many regions and how many countries per
 ```{code-cell} ipython3
 :tags: [level_basic]
 
-# your code
+len(countries['region'].unique())
+by_region=countries.groupby('region')
+by_region['name'].nunique()
 ```
 
 ### attach a region to each lease
@@ -319,17 +372,48 @@ most likely your first move is to tag all leases with a `region` column
 ```{code-cell} ipython3
 :tags: [level_basic]
 
-# your code
+countries.rename(columns={'name': 'country'}, inplace=True)
+df_final=pd.merge(l2,countries)
+df_final.head(5)
 ```
 
-### visu by period by region
+### $*visu by period by region
 
 you can now produce [the target figures, again they look like this](#label-leases-output)
 
 ```{code-cell} ipython3
 :tags: [level_basic]
 
-# your code
+by_yearb = df_final.groupby(by = ["year","region"])
+by_monthb = df_final.groupby(by = ["month","region"])
+by_weekb = df_final.groupby(by = ["week", "region"])
+res_time_Yb = by_yearb["res_time"].sum()
+res_time_Mb = by_monthb["res_time"].sum()
+res_time_Wb = by_weekb["res_time"].sum()
+res_time_Y_secb = res_time_Yb.dt.total_seconds() /3600
+res_time_M_secb = res_time_Mb.dt.total_seconds() /3600
+res_time_W_secb = res_time_Wb.dt.total_seconds() /3600
+res_time_pivot_Y = res_time_Y_secb.unstack(level='region')
+res_time_pivot_M = res_time_M_secb.unstack(level='region')
+res_time_pivot_W = res_time_W_secb.unstack(level='region')
+
+fig, axe= plt.subplots(nrows=1, ncols=3, figsize=(18, 5))
+
+res_time_pivot_Y.plot(kind='bar', stacked=True, ax=axe[0])
+axe[0].set_title("Groupement par années")
+axe[0].set_xlabel("Années")
+axe[0].set_ylabel("Heures")
+
+res_time_pivot_M.plot(kind='bar', stacked=True, ax=axe[1])
+axe[1].set_title("Groupement par mois")
+axe[1].set_xlabel("Années")
+axe[1].set_ylabel("Heures")
+
+res_time_pivot_W.plot(kind='bar', stacked=True, ax=axe[2])
+axe[2].set_title("Groupement par semain")
+axe[2].set_xlabel("Années")
+axe[2].set_ylabel("Heures")
+plt.show()
 ```
 
 ***

@@ -259,7 +259,7 @@ si j'avais voulu implémenter 2.b il faudrait tripoter un peu plus nos interface
 # votre code
 def draw(simulation, masses, colors=None, scale=10.):
     nb_steps, _, N = simulation.shape
-    size = 0.5*masses
+    size = 2*masses
 
 
     if colors is None:
